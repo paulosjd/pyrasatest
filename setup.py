@@ -1,6 +1,6 @@
 import setuptools
 
-with open("README.md", "r") as fh:
+with open("README.md", "r", encoding="utf8") as fh:
     long_description = fh.read()
 
 
@@ -10,8 +10,8 @@ requires = [
 ]
 
 setuptools.setup(
-    name='Pyrasatest',
-    version="1.0.2",
+    name='pyrsatest',
+    version="1.1.3",
     author="Paul Davis",
     author_email="pjdavis@gmx.com",
     license='MIT',

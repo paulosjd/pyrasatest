@@ -18,9 +18,6 @@ class MockRequest(testing.DummyRequest):
     def __init__(self, config=None, **kwargs):
         super().__init__(**kwargs)
         self.dbsession = MockDbSession()
-        self.registry.settings = {
-            'ini_default': config or {},
-        }
         self.tmpl_context = DummyTmplContext()
         self.mock_route_path = '/foo/bar'
 

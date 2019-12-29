@@ -4,23 +4,30 @@ class MockQuery:
 
     def __init__(self, raise_exc=None, **kwargs):
         self.count_return_val = kwargs.get('count_val', None)
-        self.all_ = kwargs.get('all_') or []
-        self.iter_vals = kwargs.get('iter_vals') or []
+        self.query_select = kwargs.get('query_select', None)
+        self.query_return_values = kwargs.get('query_return_values', {})
+        self.all_ = kwargs.get('all_', [])
+        self.iter_vals = kwargs.get('iter_vals', [])
         self.filter_by_kwargs = {}
         self.iter_count = 0
         self.call_count = 0
-        for attr in ['first_', 'one_', 'in_return_val', 'get_', 'limit_val', 'scalar_']:
+        for attr in ['first_', 'one_', 'in_return_val', 'get_', 'limit_val',
+                     'scalar_']:
             return_val = kwargs.get(attr, kwargs.get(attr.strip('_'), None))
             setattr(self, attr, return_val)
-        for attr in ['like_args', 'ordered_by', 'filter_args', 'with_hint_args']:
+        for attr in ['like_args', 'ordered_by', 'filter_args',
+                     'with_hint_args']:
             setattr(self, attr, [])
         self.exception_class = raise_exc
-        self.first_successive_return_vals = kwargs.get('first_successive_return_vals', [])
-        self.all_successive_return_vals = kwargs.get('all_successive_return_vals', [])
+        self.first_successive_return_vals = kwargs.get(
+            'first_successive_return_vals', [])
+        self.all_successive_return_vals = kwargs.get(
+            'all_successive_return_vals', [])
 
     def __iter__(self):
         if self.iter_vals:
-            return iter(self.iter_vals)  # Use case is where iteration on query without .all() call first
+            # Use case is where iteration on query without .all() call first
+            return iter(self.iter_vals)
         return self
 
     def __next__(self):
@@ -79,6 +86,8 @@ class MockQuery:
         return self.scalar_
 
     def first(self):
+        if self.query_return_values.get(self.query_select):
+            return self.query_return_values[self.query_select]
         if self.first_successive_return_vals:
             return self.first_successive_return_vals.pop(0)
         return self.first_
@@ -93,6 +102,8 @@ class MockQuery:
         return self.all_
 
     def one(self):
+        if self.query_return_values.get(self.query_select):
+            return self.query_return_values[self.query_select]
         if self.exception_class:
             raise self.exception_class()
         return self.one_

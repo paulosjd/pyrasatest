@@ -2,7 +2,6 @@ from sqlalchemy import exc
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
-
 from .sqlalchemy_mocks import MockQuery
 
 

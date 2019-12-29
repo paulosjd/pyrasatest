@@ -3,6 +3,8 @@ class MockModel:
     def __init__(self, **kwargs):
         self.save_called = False
         self.delete_called = False
+        self.init_kwargs = kwargs
+        self._result_items = []
         for k, v in kwargs.items():
             self.__dict__[k] = v
 
@@ -12,13 +14,13 @@ class MockModel:
         return len(self.__dict__)
 
     def to_dict(self, prefix=None, exclude=None):
-        _dict = {}
+        dct = {}
         if exclude is None:
             exclude = []
         for k, v in self.__dict__.items():
             if not k.startswith('_') and k not in exclude:
-                _dict[k] = v if not prefix else prefix + str(v)
-        return _dict
+                dct[k] = v if not prefix else prefix + str(v)
+        return dct
 
     def save(self):
         self.save_called = True
@@ -26,36 +28,16 @@ class MockModel:
     def delete(self):
         self.delete_called = True
 
+    def set_result_items(self, items):
+        self._result_items = items
+
+    def __getitem__(self, item):
+        if self._result_items:
+            return self._result_items[item]
+        return list(self.init_kwargs.values())[item]
+
 
 class LazyAttrMockModel(MockModel):
     def __getattr__(self, item):
         if not self.__dict__.get(item):
             return None
-
-
-def mock_callable(*args, **kwargs):
-    return 'mock_callable called'
-
-
-class MockCsvWriter:
-    def __init__(self):
-        self.written = []
-
-    def writerow(self, row):
-        self.written.append(row)
-
-
-class MockOpen:
-    def __init__(self, *args):
-        pass
-
-    def __enter__(self):
-        raise FileNotFoundError
-
-    def __exit__(self, *args):
-        pass
-
-
-class MockOpenFileNotFound(MockOpen):
-    def __enter__(self):
-        raise FileNotFoundError

@@ -1,18 +1,13 @@
-from .generic_mocks import (
-    MockModel, LazyAttrMockModel, MockCsvWriter, MockOpen, MockOpenFileNotFound
-)
 from .mock_db_session import MockDbSession
-from .pyramid_mocks import (
+from .mock_model import MockModel, LazyAttrMockModel
+from .mock_pyramid_objects import (
     DummyTmplContext, MockRequest, MockSession, MockResponse
 )
-from .sqlalchemy_mocks import MockQuery
+from .mock_query import MockQuery
 
 __all__ = [
     MockModel,
     LazyAttrMockModel,
-    MockCsvWriter,
-    MockOpen,
-    MockOpenFileNotFound,
     MockDbSession,
     DummyTmplContext,
     MockRequest,

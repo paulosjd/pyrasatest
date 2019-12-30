@@ -6,61 +6,70 @@ mocked in unit tests for an application written in Pyramid or a similar framewor
 In mocking interactions with the database layer, 
 time and effort expenditure associated with test setup can
 be reduced. By setting explicit return values for ORM queries, 
-control flow is simplified, both in the writing tests and the reading 
-of tests.
+control flow is simplified, both in the writing tests and reading 
+them. It can also save time in writing tests by avoiding the need to 
+setup params used in such queries, such as in cases of filtering on request
+parameters.
 
-Little functionality is provided to facilitate testing 
-whether usage of APIs such as SQLAlchemy ORM queries is correct or behaves as expected.
-However, through a configuration file, tests that mock such interactions using
-a `patch` decorator can be selectively `unpatched`.
+Note that in using the provided objects, for instance in mocking
+SQLAlchemy ORM queries through `MockDbSession`,
+whether queries are written correctly or return results are as expected
+is left untested.
 
-It is suited to unit testing applications which use SQLAlchemy as an ORM,
+The package written to assist unit testing of applications which use
+SQLAlchemy as a database backend,
 and a framework such as [Pyramid](https://docs.pylonsproject.org/projects/pyramid/en/latest/), 
-within which models have no direct awareness of the database. For Pyramid,
-where database interactions are carried out through `request.dbsession`,
-the replacement mock database session functionality is provided accordingly.
+in which models have no direct awareness of the database. For Pyramid,
+where database interactions made within view callables are 
+carried out through `request.dbsession`, a mock database session is provided accordingly.
 `MockDbSession` is still otherwise available to import and use in the creation
 of test objects.
 
-[The source for this project is available here][https://github.com/paulosjd/pyrasatest].
-
+The source for this project is available [here](https://github.com/paulosjd/pyrasatest).
 
 ----
 **Available functionality and example usage**
 
-**`class MockModel`** is useful for representing ORM objects, whereby desired attributes
-are set in their construction from keywords arguments.
+**`MockModel`** 
 
-As defined in `MockModel.__init__`, a number of keywords arguments have meaning
-beyond being used to set attributes and are useful in specifying desired behaviour:
+Useful for representing objects such as ORM query results. 
+Desired attributes are set in their construction from keywords arguments.
 
     >>> from pyrasatest import MockModel
     >>> mm = MockModel(name='Paul', age='34')
     >>> print(f'My name is {mm.name} and my age is {mm.age}')
     My name is Paul and my age is 34
 
-**`class LazyAttrMockModel`** is similar to `MockModel` except that in the case of a 
+`LazyAttrMockModel` is similar to `MockModel` except that in the case of a 
 failed attribute lookup, it will return `None` instead of raising `AttributeError`.
 
-**`class MockDbSession`**
+**`MockRequest`**
 
-For testing code which access an SQLAlchemy object `Result` which uses indexing
-as alternative to dotted attribute lookup (i.e. allow `namedtuple`-like interface),
+`MockRequest` objects, which inherit from `Pyramid.testing.DummyRequest`,
+have an instance of `MockDbSession` as an attribute. 
+In passing a `MockRequest` instance to a Pyramid view callable, database 
+interactions which would
+usually involve an SQLAlchemy session instance through `request.dbsession` will instead
+use `MockDbSession`. Usage is demonstrated in examples below.
+
+**`MockDbSession`**
+
+For testing code which accesses an SQLAlchemy object `Result` which uses indexing
+as alternative to dotted attribute lookup (i.e. `namedtuple`-like access),
 values will be returned according to ordering of kwargs which are passed to the constructor, for example:
 
-    mock_model = MockModel(foo='0', bar='1')
-    mock_model[0]
+    >>> mock_model = MockModel(foo='0', bar='1')
+    >>> mock_model[0]
     '0'
     
 For Python versions before 3.6, where dictionaries have no ordering, the following
 method should be used to specify return values from indexing:
     
-    mock_model.set_result_items(['foo_value', 'bar_value'])
-    mock_model[0]
+    >>> mock_model.set_result_items(['foo_value', 'bar_value'])
+    >>> mock_model[0]
     'foo_value'
 
-To set query results more generally, use:
-
+To set query results more generally, use `MockQuery` as described below.
 Query results can be specified according to the model or model property which 
 is the first positional argument passed to `dbession.query`.
 The following view callable has multiple `dbession.query` calls:
@@ -160,3 +169,69 @@ for specific queries:
                 'account_name': mock_account[0],
             }
             self.assertEqual(expected_output, self.view.get_order_info())
+
+**`MockQuery`**
+
+As defined in `MockQuery.__init__`, a number of keywords arguments have meaning
+which affect behavior on subsequent method calls.
+
+To set returns values for queries which end in `.first()` and `.one()` as in the
+following view callable:
+
+    class OrderInfoView:
+        def __init__(self, request):
+            self.request = request
+    
+        @view_config(route_name='account_info', renderer=template_path)
+        def get_account_info(self):
+            account = self.request.dbsession.query(models.Account).filter(
+                models.Account.id == self.request.params.get('account_id')
+            ).first()
+            if not account:
+                try:
+                    account = self.request.dbsession.query(models.Account).filter(
+                        models.Account.name == 'guest'
+                    ).one()
+                except exc.SQLAlchemyError:
+                    return {}
+            return {'account_name': account.name, 'account_number': account.number}
+
+Instantiate `MockQuery` with the appropriate keyword arguments and assign to `self.request.dbsession`
+as in the following example. Usage also involves testing of a condition where 
+`exc.SQLAlchemy` is raised:
+
+    from pyrasatest import MockModel, MockQuery
+    from sqlalchemy import exc
+    
+    from ..views.default import AccountInfoView
+
+
+    class AccountInfoViewTestCase(unittest.TestCase):
+        def setUp(self):
+            self.view = AccountInfoView(MockRequest()) 
+
+        def test_get_account_info(self):
+            mock_acc = MockModel(name='Abc', number='123')
+            self.view.request.dbsession.return_value = MockQuery(first_=mock_acc)
+            self.assertEqual(
+                {'account_name': mock_acc.name, 'account_number': mock_acc.number},
+                self.view.get_account_info()
+            )
+    
+        def test_get_account_info_account_not_found(self):
+            self.view.request.dbsession.return_value = MockQuery(
+                first_=None,
+                raise_exc=exc.SQLAlchemyError
+            )
+            self.assertEqual({}, self.view.get_account_info())
+
+For query results returned by `.all()`, where the code being tested iterates 
+over the result, pass in the desired return value in a manner similar to 
+`MockQuery(all_=['result1', 'result2'])`.
+
+----
+**Installation**
+
+To install the package you can use pip:
+
+    $ pip install pyrasatest

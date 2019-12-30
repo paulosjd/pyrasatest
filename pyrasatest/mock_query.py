@@ -3,11 +3,16 @@ class MockQuery:
     filter_args = None
 
     def __init__(self, raise_exc=None, **kwargs):
+        self.exception_class = raise_exc
         self.count_return_val = kwargs.get('count_val', None)
         self.query_select = kwargs.get('query_select', None)
         self.query_return_values = kwargs.get('query_return_values', {})
         self.all_ = kwargs.get('all_', [])
         self.iter_vals = kwargs.get('iter_vals', [])
+        self.first_successive_return_vals = kwargs.get(
+            'first_successive_return_vals', [])
+        self.all_successive_return_vals = kwargs.get(
+            'all_successive_return_vals', [])
         self.filter_by_kwargs = {}
         self.iter_count = 0
         self.call_count = 0
@@ -18,15 +23,9 @@ class MockQuery:
         for attr in ['like_args', 'ordered_by', 'filter_args',
                      'with_hint_args']:
             setattr(self, attr, [])
-        self.exception_class = raise_exc
-        self.first_successive_return_vals = kwargs.get(
-            'first_successive_return_vals', [])
-        self.all_successive_return_vals = kwargs.get(
-            'all_successive_return_vals', [])
 
     def __iter__(self):
         if self.iter_vals:
-            # Use case is where iteration on query without .all() call first
             return iter(self.iter_vals)
         return self
 
@@ -38,6 +37,40 @@ class MockQuery:
             self.iter_count = 0
             raise StopIteration
 
+    def first(self):
+        if self.query_return_values.get(self.query_select):
+            return self.query_return_values[self.query_select]
+        if self.first_successive_return_vals:
+            return self.first_successive_return_vals.pop(0)
+        return self.first_
+
+    def order_by(self, *args):
+        self.ordered_by.append(args)
+        return self
+
+    def all(self):
+        if self.query_return_values.get(self.query_select):
+            return self.query_return_values[self.query_select]
+        if self.all_successive_return_vals:
+            return self.all_successive_return_vals.pop(0)
+        return self.all_
+
+    def one(self):
+        if self.query_return_values.get(self.query_select):
+            return self.query_return_values[self.query_select]
+        if self.exception_class:
+            raise self.exception_class()
+        return self.one_
+
+    def in_(self, iterable):
+        return self.in_return_val
+
+    def subquery(self):
+        return self
+
+    def group_by(self, *args):
+        return self
+
     def join(self, *args):
         return self
 
@@ -47,9 +80,6 @@ class MockQuery:
     def union(self, *args):
         for mock_q in args:
             self.all_.extend(mock_q.all_)
-        return self
-
-    def union_all(self, *args):
         return self
 
     def select_from(self, *args):
@@ -84,46 +114,3 @@ class MockQuery:
 
     def scalar(self):
         return self.scalar_
-
-    def first(self):
-        if self.query_return_values.get(self.query_select):
-            return self.query_return_values[self.query_select]
-        if self.first_successive_return_vals:
-            return self.first_successive_return_vals.pop(0)
-        return self.first_
-
-    def order_by(self, *args):
-        self.ordered_by.append(args)
-        return self
-
-    def all(self):
-        if self.all_successive_return_vals:
-            return self.all_successive_return_vals.pop(0)
-        return self.all_
-
-    def one(self):
-        if self.query_return_values.get(self.query_select):
-            return self.query_return_values[self.query_select]
-        if self.exception_class:
-            raise self.exception_class()
-        return self.one_
-
-    def get(self, *args):
-        self.filter_args.append(args)
-        return self.get_
-
-    def in_(self, iterable):
-        return self.in_return_val
-
-    def with_lockmode(self, param):
-        return self
-
-    def with_hint(self, *args):
-        self.with_hint_args.append(args)
-        return self
-
-    def subquery(self):
-        return self
-
-    def group_by(self, *args):
-        return self

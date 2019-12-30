@@ -10,7 +10,7 @@ requires = [
 
 setuptools.setup(
     name='pyrsatest',
-    version="1.1.3",
+    version="1.2.1",
     author="Paul Davis",
     author_email="pjdavis@gmx.com",
     license='MIT',

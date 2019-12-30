@@ -2,16 +2,10 @@ from sqlalchemy import exc
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
-from .sqlalchemy_mocks import MockQuery
+from .mock_query import MockQuery
 
 
 class MockDbSession:
-    """
-    Usage examples
-    --------------
-    raise SQLAlchemyError from self.request.dbsession.query(...).one()
-        self.view.request.dbsession.mock_query_kwargs = {'raise_exc': SQLAlchemyError}
-    """
     def __init__(self, query_return_values=None, **kwargs):
         self.query_return_values = query_return_values or {}
         self.return_value = None

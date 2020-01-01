@@ -1,4 +1,4 @@
-from .mock_db_session import MockDbSession
+from .mock_db_session import MockDbSession, PartialMockDbSession
 from .mock_model import MockModel, LazyAttrMockModel
 from .mock_pyramid_objects import (
     DummyTmplContext, MockRequest, MockSession, MockResponse
@@ -6,12 +6,13 @@ from .mock_pyramid_objects import (
 from .mock_query import MockQuery
 
 __all__ = [
-    MockModel,
+    DummyTmplContext,
     LazyAttrMockModel,
     MockDbSession,
-    DummyTmplContext,
+    MockModel,
     MockRequest,
-    MockSession,
     MockResponse,
-    MockQuery
+    MockQuery,
+    MockSession,
+    PartialMockDbSession
 ]

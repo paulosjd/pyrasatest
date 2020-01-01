@@ -14,7 +14,10 @@ parameters.
 Note that in using the provided objects, for instance in mocking
 SQLAlchemy ORM queries through `MockDbSession`,
 whether queries are written correctly or return results are as expected
-is left untested.
+is left untested. Typical use cases for mocking SQLAlchemy queries or models
+would include situations such as where the rapid generation of unit tests is 
+required but due to complex database schemas or non-nullable foreign keys etc,
+the creation of required test database records is overly time-consuming.
 
 The package written to assist unit testing of applications which use
 SQLAlchemy as a database backend,

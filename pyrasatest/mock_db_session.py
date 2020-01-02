@@ -33,6 +33,8 @@ class MockDbSession:
     def query(self, *args):
 
         if self.query_return_values:
+            if isinstance(self.query_return_values.get(args[0]), MockQuery):
+                return self.query_return_values[args[0]]
             self.check_for_raise_condition(args[0])
 
         if self.side_effect:
@@ -70,7 +72,6 @@ class PartialMockDbSession(MockDbSession):
         dbession.query call, then the query will be mocked and the value will
         be used as the return value from any chained .one(), .first() or .all()
         calls, or an Exception raised if the value is an Exception class.
-        values from the mocked queries.
         :return: MockDbSession instance
         """
         assert query_return_values, 'query_return_values truthiness test failed'
@@ -79,7 +80,6 @@ class PartialMockDbSession(MockDbSession):
         self.dbsession = dbsession
 
     def query(self, *args):
-
         if args[0] not in self.query_return_values:
             return self.dbsession.query(*args)
 

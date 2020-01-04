@@ -13,13 +13,13 @@ class MockModel:
             return self.len_value
         return len(self.__dict__)
 
-    def to_dict(self, prefix=None, exclude=None):
+    def to_dict(self, exclude=None):
         dct = {}
         if exclude is None:
             exclude = []
-        for k, v in self.__dict__.items():
+        for k, v in self.init_kwargs.items():
             if not k.startswith('_') and k not in exclude:
-                dct[k] = v if not prefix else prefix + str(v)
+                dct[k] = v
         return dct
 
     def save(self):

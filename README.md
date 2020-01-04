@@ -17,6 +17,8 @@ whether queries are written correctly or return results are as expected
 is left untested. 
 
 The source for this project is available [here](https://github.com/paulosjd/pyrasatest).
+Unit tested and tested of some Pyramid projects but not extensively, so issues may exist
+and project is built in way intended to be adapted to specific needs.
 
 ----
 **Available functionality and example usage**
@@ -45,6 +47,11 @@ method should be used to specify return values from indexing:
     >>> mock_model.set_result_items(['foo_value', 'bar_value'])
     >>> mock_model[0]
     'foo_value'
+
+Implements `__len__` method, to set desired return value,
+set 'len_value' attribute. As with any desired attribute, this can be set by
+passing of a keyword argument to the constructor.
+
 
 `LazyAttrMockModel` is similar to `MockModel` except that in the case of a 
 failed attribute lookup, it will return `None` instead of raising `AttributeError`.

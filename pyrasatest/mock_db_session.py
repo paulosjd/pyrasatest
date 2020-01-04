@@ -1,29 +1,26 @@
 from sqlalchemy import exc
-from sqlalchemy.ext.declarative.api import DeclarativeMeta
+from sqlalchemy.ext.declarative import DeclarativeMeta
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 from .mock_query import MockQuery
 
 
 class MockDbSession:
-    # TODO Typing e.g. query_return_values optional, dict
-    def __init__(self, query_return_values=None, **kwargs):
+    def __init__(self, query_return_values: dict = None, **kwargs) -> None:
         self.query_return_values = query_return_values or {}
+        self.raise_exception = kwargs.get('raise_exception')
         self.return_value = None
         self.side_effect = None
-        self.query_call_count = 0
-        self.added_records = []
         self.commit_called = False
         self.rollback_called = False
-        self.raise_exception = kwargs.get('raise_exception')
-        self.raise_on_second_commit = kwargs.get('raise_on_second_commit')
+        self.query_call_count = 0
+        self.added_records = []
 
     def add(self, record):
         self.added_records.append(record)
 
     def commit(self):
-        if self.raise_exception or all([self.raise_on_second_commit,
-                                        self.commit_called]):
+        if self.raise_exception:
             raise exc.SQLAlchemyError
         self.commit_called = True
 

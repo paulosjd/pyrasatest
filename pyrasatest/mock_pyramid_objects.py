@@ -1,5 +1,3 @@
-from collections import namedtuple
-
 from pyramid import testing
 
 from .mock_db_session import MockDbSession
@@ -7,11 +5,8 @@ from .mock_db_session import MockDbSession
 
 class DummyTmplContext:
 
-    def set_data(self, dct):
+    def set_data(self, dct: dict) -> None:
         self.__dict__.update(dct)
-
-    def __setattr__(self, key, value):
-        self.__dict__[key] = value
 
 
 class MockRequest(testing.DummyRequest):
@@ -19,14 +14,15 @@ class MockRequest(testing.DummyRequest):
         super().__init__(**kwargs)
         self.dbsession = MockDbSession()
         self.tmpl_context = DummyTmplContext()
+        self.mock_route_url = 'foo'
+        self.mock_static_url = 'bar'
         self.mock_route_path = '/foo/bar'
 
     def route_url(self, view_path, **kwargs):
-        if view_path == 'shared.info':
-            return 'info/index'
+        return self.mock_route_url
 
     def static_url(self, *args, **kwargs):
-        return 'static_url_return_val'
+        return self.mock_static_url
 
     def route_path(self, *args, **kwargs):
         return self.mock_route_path

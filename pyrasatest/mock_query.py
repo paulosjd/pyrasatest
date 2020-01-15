@@ -1,5 +1,7 @@
 from typing import Iterable, Hashable
 
+from sqlalchemy.sql.elements import Label
+
 
 class MockQuery:
     filter_args = None
@@ -12,8 +14,18 @@ class MockQuery:
                  **kwargs) -> None:
         self.exception_class = raise_exc
         self.all_ = all_ or []
+
         self.query_return_values = query_return_values or {}
         self.query_select = query_select
+        # Since hash(Foo.bar.label('abc')) gives unique value
+        for k in self.query_return_values.keys():
+            if isinstance(k, Label):
+                self.query_return_values.update({
+                    str(k): self.query_return_values.pop(k)
+                })
+        if isinstance(self.query_select, Label):
+            self.query_select = str(self.query_select)
+
         self.first_ = kwargs.get('first_')
         self.one_ = kwargs.get('one_')
         self.scalar_ = kwargs.get('scalar_')

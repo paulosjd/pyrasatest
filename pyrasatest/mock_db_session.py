@@ -1,6 +1,7 @@
 from sqlalchemy import exc
 from sqlalchemy.ext.declarative import DeclarativeMeta
 from sqlalchemy.orm.attributes import InstrumentedAttribute
+from sqlalchemy.sql.elements import Label
 
 from .mock_query import MockQuery
 
@@ -8,6 +9,11 @@ from .mock_query import MockQuery
 class MockDbSession:
     def __init__(self, query_return_values: dict = None, **kwargs) -> None:
         self.query_return_values = query_return_values or {}
+        for k in self.query_return_values.keys():
+            if isinstance(k, Label):
+                self.query_return_values.update({
+                    str(k): self.query_return_values.pop(k)
+                })
         self.raise_exception = kwargs.get('raise_exception')
         self.return_value = None
         self.side_effect = None
@@ -28,11 +34,12 @@ class MockDbSession:
         self.rollback_called = True
 
     def query(self, *args):
+        first_param = str(args[0]) if isinstance(args[0], Label) else args[0]
 
         if self.query_return_values:
-            if isinstance(self.query_return_values.get(args[0]), MockQuery):
-                return self.query_return_values[args[0]]
-            self.check_for_raise_condition(args[0])
+            if isinstance(self.query_return_values.get(first_param), MockQuery):
+                return self.query_return_values[first_param]
+            self.check_for_raise_condition(first_param)
 
         if self.side_effect:
             # Expected to be an instance of MockQuery
@@ -43,7 +50,7 @@ class MockDbSession:
         if self.return_value:
             return self.return_value
 
-        return MockQuery(query_select=args[0],
+        return MockQuery(query_select=first_param,
                          query_return_values=self.query_return_values)
 
     def check_for_raise_condition(self, first_arg):
@@ -62,7 +69,9 @@ class MockDbSession:
 
 class PartialMockDbSession(MockDbSession):
     def __init__(self, query_return_values=None, dbsession=None, **kwargs):
-        """ Creates an instance for intended use of ...
+        """ Similar to MockDbSession but uses SQLAlchemy ORM queries
+         (i.e. not mocked) if these first positional argument passed to the
+         'query' method does not match any keys in 'query_return_values'
         :param dbsession: instance of sqlalchemy.orm.Session
         :param query_return_values: dict where each key is a model or model
         property. If it is the first positional argument passed to a
@@ -77,7 +86,9 @@ class PartialMockDbSession(MockDbSession):
         self.dbsession = dbsession
 
     def query(self, *args):
-        if args[0] not in self.query_return_values:
+        first_param = str(args[0]) if isinstance(args[0], Label) else args[0]
+
+        if first_param not in self.query_return_values:
             return self.dbsession.query(*args)
 
         return super().query(*args)

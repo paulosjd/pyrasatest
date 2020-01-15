@@ -10,6 +10,8 @@ class DummyTmplContext:
 
 
 class MockRequest(testing.DummyRequest):
+    url = 'http://testurl.com'
+
     def __init__(self, config=None, **kwargs):
         super().__init__(**kwargs)
         self.dbsession = MockDbSession()
@@ -17,6 +19,7 @@ class MockRequest(testing.DummyRequest):
         self.mock_route_url = 'foo'
         self.mock_static_url = 'bar'
         self.mock_route_path = '/foo/bar'
+        self.method = kwargs.get('method', 'GET')
 
     def route_url(self, view_path, **kwargs):
         return self.mock_route_url

@@ -1,5 +1,7 @@
 **Pyramid SQLAlchemy unit testing utilities**
 
+TODO -- note what version of SQLAlc. and Pyramid developed for
+
 A package which provides Python classes that enables SQLAlchemy functionality to be
 mocked in unit tests for an application written in Pyramid or a similar framework.
 

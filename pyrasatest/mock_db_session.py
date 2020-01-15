@@ -8,12 +8,10 @@ from .mock_query import MockQuery
 
 class MockDbSession:
     def __init__(self, query_return_values: dict = None, **kwargs) -> None:
-        self.query_return_values = query_return_values or {}
-        for k in self.query_return_values.keys():
-            if isinstance(k, Label):
-                self.query_return_values.update({
-                    str(k): self.query_return_values.pop(k)
-                })
+        self.query_return_values = {
+            '{}.{}'.format(k, k.key) if isinstance(k, Label) else k: v for k, v
+            in query_return_values.items()
+        } if query_return_values else {}
         self.raise_exception = kwargs.get('raise_exception')
         self.return_value = None
         self.side_effect = None
@@ -34,7 +32,10 @@ class MockDbSession:
         self.rollback_called = True
 
     def query(self, *args):
-        first_param = str(args[0]) if isinstance(args[0], Label) else args[0]
+        first_param = None
+        if args:
+            first_param = '{}.{}'.format(args[0], args[0].key) if isinstance(
+                args[0], Label) else args[0]
 
         if self.query_return_values:
             if isinstance(self.query_return_values.get(first_param), MockQuery):
@@ -86,7 +87,10 @@ class PartialMockDbSession(MockDbSession):
         self.dbsession = dbsession
 
     def query(self, *args):
-        first_param = str(args[0]) if isinstance(args[0], Label) else args[0]
+        first_param = None
+        if args:
+            first_param = '{}.{}'.format(args[0], args[0].key) if isinstance(
+                args[0], Label) else args[0]
 
         if first_param not in self.query_return_values:
             return self.dbsession.query(*args)
